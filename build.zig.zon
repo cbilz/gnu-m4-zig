@@ -1,0 +1,16 @@
+.{
+    .name = "gnu-m4",
+    .version = "1.4.19",
+    .dependencies = .{
+        .upstream = .{
+            .url = "https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz",
+            .hash = "12207769ba0b098874a3b113332c662ce6ebc31050d454f51f59a9a7806249d3e136",
+        },
+    },
+    .paths = .{
+        "LICENSE",
+        "README.md",
+        "build.zig",
+        "build.zig.zon",
+    },
+}
