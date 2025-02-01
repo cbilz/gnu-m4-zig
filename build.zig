@@ -3,15 +3,21 @@ const std = @import("std");
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("upstream", .{});
 
+    const include = b.addWriteFiles();
+    b.installDirectory(.{
+        .source_dir = include.getDirectory(),
+        .install_dir = .header,
+        .install_subdir = "",
+    });
+
     const config_h = b.addConfigHeader(
         .{ .style = .{ .autoconf = upstream.path("lib/config.hin") } },
         config_h_values,
     );
-    const config_h_install = b.addInstallHeaderFile(config_h.getOutput(), "config.h");
-    b.getInstallStep().dependOn(&config_h_install.step);
+    _ = include.addCopyFile(config_h.getOutput(), "config.h");
 
     const check = b.step("check", "Check if GNU M4 compiles");
-    check.dependOn(&config_h.step);
+    check.dependOn(&include.step);
 }
 
 // The version of GNU M4 that we build.
