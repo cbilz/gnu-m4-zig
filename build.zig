@@ -17,6 +17,16 @@ pub fn build(b: *std.Build) void {
         config_h_values,
     );
 
+    addCopyConfigHeader(
+        include,
+        "alloca.h",
+        .{ .cmake = upstream.path("lib/alloca.in.h") },
+        .{ .HAVE_ALLOCA_H = HAVE_ALLOCA_H },
+    );
+
+    // The macros defined in `configmake.h` are unused since we disable native language support.
+    addCopyConfigHeader(include, "configmake.h", .blank, .{});
+
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
 }
