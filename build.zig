@@ -1,4 +1,5 @@
 const std = @import("std");
+const InsertHeaderSnippet = @import("InsertHeaderSnippet.zig");
 
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("upstream", .{});
@@ -26,6 +27,35 @@ pub fn build(b: *std.Build) void {
 
     // The macros defined in `configmake.h` are unused since we disable native language support.
     addCopyConfigHeader(include, "configmake.h", .blank, .{});
+
+    const dirent_in_h = upstream.path("lib/dirent.in.h");
+    const dirent_1_h = include.step.owner.addConfigHeader(
+        .{ .style = .{ .cmake = dirent_in_h } },
+        dirent_h_values,
+    );
+    // This should be fixed in ConfigHeader, see:
+    // https://github.com/ziglang/zig/issues/16208
+    dirent_in_h.addStepDependencies(&dirent_1_h.step);
+
+    const dirent_2_h = InsertHeaderSnippet.create(b, .{
+        .source_file = dirent_1_h.getOutput(),
+        .snippet_file = upstream.path("lib/c++defs.h"),
+        .line_pattern = "definitions of _GL_FUNCDECL_RPL",
+    });
+
+    const dirent_3_h = InsertHeaderSnippet.create(b, .{
+        .source_file = dirent_2_h.getOutput(),
+        .snippet_file = upstream.path("lib/arg-nonnull.h"),
+        .line_pattern = "definition of _GL_ARG_NONNULL",
+    });
+
+    const dirent_h = InsertHeaderSnippet.create(b, .{
+        .source_file = dirent_3_h.getOutput(),
+        .snippet_file = upstream.path("lib/warn-on-use.h"),
+        .line_pattern = "definition of _GL_WARN_ON_USE",
+    });
+
+    _ = include.addCopyFile(dirent_h.getOutput(), "dirent.h");
 
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
@@ -57,6 +87,17 @@ const version = blk: {
     const len = std.mem.indexOfScalar(u8, src[pos..], '"') orelse break :blk "";
     break :blk src[pos..][0..len];
 };
+
+const GNULIB_FDOPENDIR = 1;
+const HAVE_ALLOCA_H = 1;
+const HAVE_CLOSEDIR = 1;
+const HAVE_DECL_DIRFD = 1;
+const HAVE_DECL_FDOPENDIR = 1;
+const HAVE_DIRENT_H = 1;
+const HAVE_FDOPENDIR = 1;
+const HAVE_OPENDIR = 1;
+const HAVE_READDIR = 1;
+const HAVE_REWINDDIR = 1;
 
 const config_h_values = .{
     .@"inline" = null,
@@ -97,7 +138,7 @@ const config_h_values = .{
     .GNULIB_CANONICALIZE_LGPL = 1,
     .GNULIB_CLOSE_STREAM = 1,
     .GNULIB_DIRNAME = 1,
-    .GNULIB_FDOPENDIR = 1,
+    .GNULIB_FDOPENDIR = GNULIB_FDOPENDIR,
     .GNULIB_FD_SAFER_FLAG = 1,
     .GNULIB_FFLUSH = 1,
     .GNULIB_FILENAMECAT = 1,
@@ -276,7 +317,7 @@ const config_h_values = .{
     .GNULIB_XALLOC = 1,
     .GNULIB_XALLOC_DIE = 1,
     .HAVE_ALLOCA = 1,
-    .HAVE_ALLOCA_H = 1,
+    .HAVE_ALLOCA_H = HAVE_ALLOCA_H,
     .HAVE_ARPA_INET_H = 1,
     .HAVE_BCRYPT_H = null,
     .HAVE_BP_SYM_H = null,
@@ -288,7 +329,7 @@ const config_h_values = .{
     .HAVE_CFPREFERENCESCOPYAPPVALUE = null,
     .HAVE_CLOCK_GETTIME = 1,
     .HAVE_CLOCK_SETTIME = 1,
-    .HAVE_CLOSEDIR = 1,
+    .HAVE_CLOSEDIR = HAVE_CLOSEDIR,
     .HAVE_CLOSE_RANGE = 1,
     .HAVE_CONFSTR = null,
     .HAVE_COPYSIGNF_IN_LIBC = null,
@@ -301,13 +342,13 @@ const config_h_values = .{
     .HAVE_DECL_COPYSIGN = null,
     .HAVE_DECL_COPYSIGNF = null,
     .HAVE_DECL_COPYSIGNL = null,
-    .HAVE_DECL_DIRFD = 1,
+    .HAVE_DECL_DIRFD = HAVE_DECL_DIRFD,
     .HAVE_DECL_ECVT = 1,
     .HAVE_DECL_EXECVPE = 1,
     .HAVE_DECL_FCHDIR = 1,
     .HAVE_DECL_FCLOSEALL = 1,
     .HAVE_DECL_FCVT = 1,
-    .HAVE_DECL_FDOPENDIR = 1,
+    .HAVE_DECL_FDOPENDIR = HAVE_DECL_FDOPENDIR,
     .HAVE_DECL_FEOF_UNLOCKED = 1,
     .HAVE_DECL_FERROR_UNLOCKED = 1,
     .HAVE_DECL_FFLUSH_UNLOCKED = 1,
@@ -356,7 +397,7 @@ const config_h_values = .{
     .HAVE_DECL__SYS_SIGLIST = null,
     .HAVE_DECL___ARGV = 0,
     .HAVE_DECL___FPENDING = 1,
-    .HAVE_DIRENT_H = 1,
+    .HAVE_DIRENT_H = HAVE_DIRENT_H,
     .HAVE_DIRFD = 1,
     .HAVE_DUPLOCALE = 1,
     .HAVE_ENVIRON_DECL = 1,
@@ -366,7 +407,7 @@ const config_h_values = .{
     .HAVE_FAKE_LOCALES = null,
     .HAVE_FCHDIR = 1,
     .HAVE_FCNTL = 1,
-    .HAVE_FDOPENDIR = 1,
+    .HAVE_FDOPENDIR = HAVE_FDOPENDIR,
     .HAVE_FEATURES_H = 1,
     .HAVE_FPURGE = null,
     .HAVE_FREELOCALE = 1,
@@ -452,7 +493,7 @@ const config_h_values = .{
     .HAVE_NL_LANGINFO = 1,
     .HAVE_OBSTACK = null,
     .HAVE_OPENAT = 1,
-    .HAVE_OPENDIR = 1,
+    .HAVE_OPENDIR = HAVE_OPENDIR,
     .HAVE_OS_H = null,
     .HAVE_PARTLY_WORKING_GETCWD = null,
     .HAVE_PATHS_H = null,
@@ -475,11 +516,11 @@ const config_h_values = .{
     .HAVE_PTHREAD_T = 1,
     .HAVE_RAISE = 1,
     .HAVE_RAWMEMCHR = 1,
-    .HAVE_READDIR = 1,
+    .HAVE_READDIR = HAVE_READDIR,
     .HAVE_READLINK = 1,
     .HAVE_REALLOCARRAY = 1,
     .HAVE_REALPATH = 1,
-    .HAVE_REWINDDIR = 1,
+    .HAVE_REWINDDIR = HAVE_REWINDDIR,
     .HAVE_SAME_LONG_DOUBLE_AS_DOUBLE = null,
     .HAVE_SA_FAMILY_T = 1,
     .HAVE_SCHED_H = 1,
@@ -792,4 +833,37 @@ const config_h_values = .{
     .stack_t = null,
     .uid_t = null,
     .va_copy = null,
+};
+
+const dirent_h_values =
+    .{
+    .GNULIB_ALPHASORT = 0,
+    .GNULIB_CLOSEDIR = 1,
+    .GNULIB_DIRFD = 1,
+    .GNULIB_FDOPENDIR = GNULIB_FDOPENDIR,
+    .GNULIB_OPENDIR = 1,
+    .GNULIB_READDIR = 1,
+    .GNULIB_REWINDDIR = 1,
+    .GNULIB_SCANDIR = 0,
+    .GUARD_PREFIX = .GL_M4,
+    .HAVE_ALPHASORT = 1,
+    .HAVE_CLOSEDIR = HAVE_CLOSEDIR,
+    .HAVE_DECL_DIRFD = HAVE_DECL_DIRFD,
+    .HAVE_DECL_FDOPENDIR = HAVE_DECL_FDOPENDIR,
+    .HAVE_DIRENT_H = HAVE_DIRENT_H,
+    .HAVE_FDOPENDIR = HAVE_FDOPENDIR,
+    .HAVE_OPENDIR = HAVE_OPENDIR,
+    .HAVE_READDIR = HAVE_READDIR,
+    .HAVE_REWINDDIR = HAVE_REWINDDIR,
+    .HAVE_SCANDIR = 1,
+    .INCLUDE_NEXT = .include_next,
+    .NEXT_DIRENT_H = .@"<dirent.h>",
+    .PRAGMA_COLUMNS = null,
+    .PRAGMA_SYSTEM_HEADER = .@"#pragma GCC system_header",
+    .REPLACE_CLOSEDIR = 0,
+    // TODO: GNU Build System sets this to 0 here, but to null in config.h. Why? Is this
+    // correct?
+    .REPLACE_DIRFD = 0,
+    .REPLACE_FDOPENDIR = 0,
+    .REPLACE_OPENDIR = 0,
 };
