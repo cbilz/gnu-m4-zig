@@ -10,14 +10,30 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "",
     });
 
-    const config_h = b.addConfigHeader(
-        .{ .style = .{ .autoconf = upstream.path("lib/config.hin") } },
+    addCopyConfigHeader(
+        include,
+        "config.h",
+        .{ .autoconf = upstream.path("lib/config.hin") },
         config_h_values,
     );
-    _ = include.addCopyFile(config_h.getOutput(), "config.h");
 
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
+}
+
+fn addCopyConfigHeader(
+    write_file: *std.Build.Step.WriteFile,
+    sub_path: []const u8,
+    style: std.Build.Step.ConfigHeader.Style,
+    values: anytype,
+) void {
+    const header = write_file.step.owner.addConfigHeader(
+        .{ .style = style, .include_path = sub_path },
+        values,
+    );
+    // This should be fixed in ConfigHeader.
+    if (style.getPath()) |lp| lp.addStepDependencies(&header.step);
+    _ = write_file.addCopyFile(header.getOutput(), sub_path);
 }
 
 // The version of GNU M4 that we build.
