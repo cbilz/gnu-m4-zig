@@ -1,5 +1,5 @@
 const std = @import("std");
-const InsertHeaderSnippet = @import("InsertHeaderSnippet.zig");
+const InsertHeaderSnippets = @import("InsertHeaderSnippets.zig");
 
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("upstream", .{});
@@ -37,22 +37,22 @@ pub fn build(b: *std.Build) void {
     // https://github.com/ziglang/zig/issues/16208
     dirent_in_h.addStepDependencies(&dirent_1_h.step);
 
-    const dirent_2_h = InsertHeaderSnippet.create(b, .{
+    const dirent_h = InsertHeaderSnippets.create(b, .{
         .source_file = dirent_1_h.getOutput(),
-        .snippet_file = upstream.path("lib/c++defs.h"),
-        .line_pattern = "definitions of _GL_FUNCDECL_RPL",
-    });
-
-    const dirent_3_h = InsertHeaderSnippet.create(b, .{
-        .source_file = dirent_2_h.getOutput(),
-        .snippet_file = upstream.path("lib/arg-nonnull.h"),
-        .line_pattern = "definition of _GL_ARG_NONNULL",
-    });
-
-    const dirent_h = InsertHeaderSnippet.create(b, .{
-        .source_file = dirent_3_h.getOutput(),
-        .snippet_file = upstream.path("lib/warn-on-use.h"),
-        .line_pattern = "definition of _GL_WARN_ON_USE",
+        .snippets = &[_]InsertHeaderSnippets.Snippet{
+            .{
+                .file = upstream.path("lib/c++defs.h"),
+                .line_pattern = "definitions of _GL_FUNCDECL_RPL",
+            },
+            .{
+                .file = upstream.path("lib/arg-nonnull.h"),
+                .line_pattern = "definition of _GL_ARG_NONNULL",
+            },
+            .{
+                .file = upstream.path("lib/warn-on-use.h"),
+                .line_pattern = "definition of _GL_WARN_ON_USE",
+            },
+        },
     });
 
     _ = include.addCopyFile(dirent_h.getOutput(), "dirent.h");
