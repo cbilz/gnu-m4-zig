@@ -28,6 +28,21 @@ pub fn build(b: *std.Build) void {
     // The macros defined in `configmake.h` are unused since we disable native language support.
     addCopyConfigHeader(include, "configmake.h", .blank, .{});
 
+    const gnulib_snippets = &[_]InsertHeaderSnippets.Snippet{
+        .{
+            .file = upstream.path("lib/c++defs.h"),
+            .line_pattern = "definitions of _GL_FUNCDECL_RPL",
+        },
+        .{
+            .file = upstream.path("lib/arg-nonnull.h"),
+            .line_pattern = "definition of _GL_ARG_NONNULL",
+        },
+        .{
+            .file = upstream.path("lib/warn-on-use.h"),
+            .line_pattern = "definition of _GL_WARN_ON_USE",
+        },
+    };
+
     const dirent_in_h = upstream.path("lib/dirent.in.h");
     const dirent_1_h = include.step.owner.addConfigHeader(
         .{ .style = .{ .cmake = dirent_in_h } },
@@ -36,26 +51,22 @@ pub fn build(b: *std.Build) void {
     // This should be fixed in ConfigHeader, see:
     // https://github.com/ziglang/zig/issues/16208
     dirent_in_h.addStepDependencies(&dirent_1_h.step);
-
     const dirent_h = InsertHeaderSnippets.create(b, .{
         .source_file = dirent_1_h.getOutput(),
-        .snippets = &[_]InsertHeaderSnippets.Snippet{
-            .{
-                .file = upstream.path("lib/c++defs.h"),
-                .line_pattern = "definitions of _GL_FUNCDECL_RPL",
-            },
-            .{
-                .file = upstream.path("lib/arg-nonnull.h"),
-                .line_pattern = "definition of _GL_ARG_NONNULL",
-            },
-            .{
-                .file = upstream.path("lib/warn-on-use.h"),
-                .line_pattern = "definition of _GL_WARN_ON_USE",
-            },
-        },
+        .snippets = gnulib_snippets,
     });
-
     _ = include.addCopyFile(dirent_h.getOutput(), "dirent.h");
+
+    const fcntl_in_h = upstream.path("lib/fcntl.in.h");
+    const fcntl_1_h = include.step.owner.addConfigHeader(
+        .{ .style = .{ .cmake = fcntl_in_h } },
+        fcntl_h_values,
+    );
+    const fcntl_h = InsertHeaderSnippets.create(b, .{
+        .source_file = fcntl_1_h.getOutput(),
+        .snippets = gnulib_snippets,
+    });
+    _ = include.addCopyFile(fcntl_h.getOutput(), "fcntl.h");
 
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
@@ -98,6 +109,13 @@ const HAVE_FDOPENDIR = 1;
 const HAVE_OPENDIR = 1;
 const HAVE_READDIR = 1;
 const HAVE_REWINDDIR = 1;
+const INCLUDE_NEXT = .include_next;
+const PRAGMA_SYSTEM_HEADER = .@"#pragma GCC system_header";
+const PRAGMA_COLUMNS = null;
+const GUARD_PREFIX = .GL_M4;
+const GNULIB_OPENAT = 1;
+const HAVE_FCNTL = 1;
+const HAVE_OPENAT = 1;
 
 const config_h_values = .{
     .@"inline" = null,
@@ -150,7 +168,7 @@ const config_h_values = .{
     .GNULIB_LOCK = 1,
     .GNULIB_MBRTOWC_SINGLE_THREAD = 1,
     .GNULIB_MSVC_NOTHROW = 1,
-    .GNULIB_OPENAT = 1,
+    .GNULIB_OPENAT = GNULIB_OPENAT,
     .GNULIB_PIPE2_SAFER = 1,
     .GNULIB_PRINTF_ATTRIBUTE_FLAVOR_GNU = null,
     .GNULIB_REALLOCARRAY = 1,
@@ -406,7 +424,7 @@ const config_h_values = .{
     .HAVE_FACCESSAT = 1,
     .HAVE_FAKE_LOCALES = null,
     .HAVE_FCHDIR = 1,
-    .HAVE_FCNTL = 1,
+    .HAVE_FCNTL = HAVE_FCNTL,
     .HAVE_FDOPENDIR = HAVE_FDOPENDIR,
     .HAVE_FEATURES_H = 1,
     .HAVE_FPURGE = null,
@@ -492,7 +510,7 @@ const config_h_values = .{
     .HAVE_NEWLOCALE = 1,
     .HAVE_NL_LANGINFO = 1,
     .HAVE_OBSTACK = null,
-    .HAVE_OPENAT = 1,
+    .HAVE_OPENAT = HAVE_OPENAT,
     .HAVE_OPENDIR = HAVE_OPENDIR,
     .HAVE_OS_H = null,
     .HAVE_PARTLY_WORKING_GETCWD = null,
@@ -845,7 +863,7 @@ const dirent_h_values =
     .GNULIB_READDIR = 1,
     .GNULIB_REWINDDIR = 1,
     .GNULIB_SCANDIR = 0,
-    .GUARD_PREFIX = .GL_M4,
+    .GUARD_PREFIX = GUARD_PREFIX,
     .HAVE_ALPHASORT = 1,
     .HAVE_CLOSEDIR = HAVE_CLOSEDIR,
     .HAVE_DECL_DIRFD = HAVE_DECL_DIRFD,
@@ -856,14 +874,35 @@ const dirent_h_values =
     .HAVE_READDIR = HAVE_READDIR,
     .HAVE_REWINDDIR = HAVE_REWINDDIR,
     .HAVE_SCANDIR = 1,
-    .INCLUDE_NEXT = .include_next,
+    .INCLUDE_NEXT = INCLUDE_NEXT,
     .NEXT_DIRENT_H = .@"<dirent.h>",
-    .PRAGMA_COLUMNS = null,
-    .PRAGMA_SYSTEM_HEADER = .@"#pragma GCC system_header",
+    .PRAGMA_COLUMNS = PRAGMA_COLUMNS,
+    .PRAGMA_SYSTEM_HEADER = PRAGMA_SYSTEM_HEADER,
     .REPLACE_CLOSEDIR = 0,
     // TODO: GNU Build System sets this to 0 here, but to null in config.h. Why? Is this
     // correct?
     .REPLACE_DIRFD = 0,
     .REPLACE_FDOPENDIR = 0,
     .REPLACE_OPENDIR = 0,
+};
+
+const fcntl_h_values = .{
+    .GNULIB_CREAT = .IN_M4_GNULIB_TESTS,
+    .GNULIB_FCNTL = 1,
+    .GNULIB_MDA_CREAT = 1,
+    .GNULIB_MDA_OPEN = 1,
+    .GNULIB_NONBLOCKING = 0,
+    .GNULIB_OPEN = 1,
+    .GNULIB_OPENAT = GNULIB_OPENAT,
+    .GUARD_PREFIX = .GL_M4,
+    .HAVE_FCNTL = HAVE_FCNTL,
+    .HAVE_OPENAT = HAVE_OPENAT,
+    .INCLUDE_NEXT = INCLUDE_NEXT,
+    .NEXT_FCNTL_H = .@"<fcntl.h>",
+    .PRAGMA_COLUMNS = PRAGMA_COLUMNS,
+    .PRAGMA_SYSTEM_HEADER = PRAGMA_SYSTEM_HEADER,
+    .REPLACE_CREAT = 0,
+    .REPLACE_FCNTL = 1,
+    .REPLACE_OPEN = 0,
+    .REPLACE_OPENAT = 0,
 };
