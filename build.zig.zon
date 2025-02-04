@@ -8,6 +8,7 @@
         },
     },
     .paths = .{
+        "InsertHeaderSnippets.zig",
         "LICENSE",
         "README.md",
         "build.zig",
