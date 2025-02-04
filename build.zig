@@ -52,6 +52,14 @@ pub fn build(b: *std.Build) void {
         &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
     );
 
+    addConfigHeaderWithSnippets(
+        include,
+        "iconv.h",
+        .{ .cmake = upstream.path("lib/iconv.in.h") },
+        iconv_h_values,
+        &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
+    );
+
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
 }
@@ -230,6 +238,7 @@ const config_values = .{
     .GNULIB_FOPEN_SAFER = 1,
     .GNULIB_FSCANF = 1,
     .GNULIB_GETCWD = 1,
+    .GNULIB_ICONV = 1,
     .GNULIB_ISBLANK = .IN_M4_GNULIB_TESTS,
     .GNULIB_LOCK = 1,
     .GNULIB_MBRTOWC_SINGLE_THREAD = 1,
@@ -767,6 +776,7 @@ const config_values = .{
     .NEED_SETLOCALE_MTSAFE = 0,
     .NEXT_DIRENT_H = .@"<dirent.h>",
     .NEXT_FCNTL_H = .@"<fcntl.h>",
+    .NEXT_ICONV_H = .@"<iconv.h>",
     .NL_LANGINFO_MTSAFE = 1,
     .OPEN_TRAILING_SLASH_BUG = null,
     .PACKAGE = "m4",
@@ -802,6 +812,9 @@ const config_values = .{
     .REPLACE_FCNTL = 1,
     .REPLACE_FDOPENDIR = 0,
     .REPLACE_FUNC_STAT_FILE = null,
+    .REPLACE_ICONV = 0,
+    .REPLACE_ICONV_OPEN = 0,
+    .REPLACE_ICONV_UTF = 0,
     .REPLACE_NL_LANGINFO = null,
     .REPLACE_OPEN = 0,
     .REPLACE_OPENAT = 0,
@@ -1727,4 +1740,17 @@ const fcntl_h_values = &[_]ConfigValueTag{
     .REPLACE_FCNTL,
     .REPLACE_OPEN,
     .REPLACE_OPENAT,
+};
+
+const iconv_h_values = &[_]ConfigValueTag{
+    .GNULIB_ICONV,
+    .GUARD_PREFIX,
+    .ICONV_CONST,
+    .INCLUDE_NEXT,
+    .NEXT_ICONV_H,
+    .PRAGMA_COLUMNS,
+    .PRAGMA_SYSTEM_HEADER,
+    .REPLACE_ICONV,
+    .REPLACE_ICONV_OPEN,
+    .REPLACE_ICONV_UTF,
 };
