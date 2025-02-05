@@ -24,54 +24,20 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "",
     });
 
-    addConfigHeaderWithSnippets(
-        include,
-        "config.h",
-        .{ .autoconf = upstream.path("lib/config.hin") },
-        config_h_values,
-        &[_]SnippetTag{},
-    );
-
-    addConfigHeaderWithSnippets(
-        include,
-        "alloca.h",
-        .{ .cmake = upstream.path("lib/alloca.in.h") },
-        &[_]ConfigValueTag{.HAVE_ALLOCA_H},
-        &[_]SnippetTag{},
-    );
-
-    // The macros defined in `configmake.h` are unused since we disable native language support.
-    addConfigHeaderWithSnippets(
-        include,
-        "configmake.h",
-        .blank,
-        &[_]ConfigValueTag{},
-        &[_]SnippetTag{},
-    );
-
-    addConfigHeaderWithSnippets(
-        include,
-        "dirent.h",
-        .{ .cmake = upstream.path("lib/dirent.in.h") },
-        dirent_h_values,
-        &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
-    );
-
-    addConfigHeaderWithSnippets(
-        include,
-        "fcntl.h",
-        .{ .cmake = upstream.path("lib/fcntl.in.h") },
-        fcntl_h_values,
-        &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
-    );
-
-    addConfigHeaderWithSnippets(
-        include,
-        "iconv.h",
-        .{ .cmake = upstream.path("lib/iconv.in.h") },
-        iconv_h_values,
-        &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
-    );
+    inline for (headers) |header| {
+        const style: std.Build.Step.ConfigHeader.Style = switch (header.style) {
+            .autoconf => |p| .{ .autoconf = upstream.path(p) },
+            .cmake => |p| .{ .cmake = upstream.path(p) },
+            .blank => .blank,
+        };
+        addConfigHeaderWithSnippets(
+            include,
+            header.sub_path,
+            style,
+            header.values,
+            header.snippets,
+        );
+    }
 
     const check = b.step("check", "Check if GNU M4 compiles");
     check.dependOn(&include.step);
@@ -184,6 +150,59 @@ fn extractValues(comptime tags: []const ConfigValueTag) ExtractValues(tags) {
     }
     return result;
 }
+
+const Header = struct {
+    sub_path: []const u8,
+    style: Style,
+    values: []const ConfigValueTag,
+    snippets: []const SnippetTag,
+
+    pub const Style = union(enum) {
+        autoconf: []const u8,
+        cmake: []const u8,
+        blank,
+    };
+};
+
+const headers = [_]Header{
+    .{
+        .sub_path = "config.h",
+        .style = .{ .autoconf = "lib/config.hin" },
+        .values = config_h_values,
+        .snippets = &[_]SnippetTag{},
+    },
+    .{
+        .sub_path = "alloca.h",
+        .style = .{ .cmake = "lib/alloca.in.h" },
+        .values = &[_]ConfigValueTag{.HAVE_ALLOCA_H},
+        .snippets = &[_]SnippetTag{},
+    },
+    .{
+        .sub_path = "configmake.h",
+        .style = .blank,
+        // The macros defined in `configmake.h` are unused since we disable native language support.
+        .values = &[_]ConfigValueTag{},
+        .snippets = &[_]SnippetTag{},
+    },
+    .{
+        .sub_path = "dirent.h",
+        .style = .{ .cmake = "lib/dirent.in.h" },
+        .values = dirent_h_values,
+        .snippets = &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
+    },
+    .{
+        .sub_path = "fcntl.h",
+        .style = .{ .cmake = "lib/fcntl.in.h" },
+        .values = fcntl_h_values,
+        .snippets = &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
+    },
+    .{
+        .sub_path = "iconv.h",
+        .style = .{ .cmake = "lib/iconv.in.h" },
+        .values = iconv_h_values,
+        .snippets = &[_]SnippetTag{ ._GL_FUNCDECL_RPL, ._GL_ARG_NONNULL, ._GL_WARN_ON_USE },
+    },
+};
 
 const config_values_fields = @typeInfo(@TypeOf(config_values)).@"struct".fields;
 
