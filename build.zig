@@ -204,6 +204,18 @@ const headers = [_]Header{
     },
 };
 
+// Check that all values in config_values are in use.
+comptime {
+    @setEvalBranchQuota((headers.len + 1) * config_values_fields.len);
+    var value_used = [_]bool{false} ** config_values_fields.len;
+    for (headers) |header| {
+        for (header.values) |tag| value_used[@intFromEnum(tag)] = true;
+    }
+    for (value_used, 0..) |used, i| {
+        if (!used) @compileLog("Value " ++ config_values_fields[i].name ++ " is unused.");
+    }
+}
+
 const config_values_fields = @typeInfo(@TypeOf(config_values)).@"struct".fields;
 
 const config_values = .{
