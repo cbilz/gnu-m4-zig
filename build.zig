@@ -1,6 +1,19 @@
 const std = @import("std");
 const InsertHeaderSnippets = @import("InsertHeaderSnippets.zig");
 
+// Importing ZON without specifying a result type might be supported in the future. Then we could
+// make the following code less verbose more robust.
+const Schema = struct {
+    name: []const u8,
+    version: []const u8,
+    dependencies: struct {
+        upstream: struct { url: []const u8, hash: []const u8 },
+    },
+    paths: []const []const u8,
+};
+const zon: Schema = @import("build.zig.zon");
+const version = zon.version;
+
 pub fn build(b: *std.Build) void {
     const upstream = b.dependency("upstream", .{});
 
@@ -124,18 +137,6 @@ fn addConfigHeaderWithSnippets(
 
     _ = write_file.addCopyFile(source, sub_path);
 }
-
-// The version of GNU M4 that we build.
-const version = blk: {
-    // Ideally, the package version should be accessible via `std.Build` in the future, eliminating
-    // the need to process `build.zig.zon` here.
-    const src = @embedFile("build.zig.zon");
-    // Unable to use `std.zig.Ast.parse` at comptime, so string matching is used as an alternative.
-    const needle = " .version = \"";
-    const pos = (std.mem.indexOf(u8, src, needle) orelse break :blk "") + needle.len;
-    const len = std.mem.indexOfScalar(u8, src[pos..], '"') orelse break :blk "";
-    break :blk src[pos..][0..len];
-};
 
 const SnippetTag = enum {
     _GL_FUNCDECL_RPL,
