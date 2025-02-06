@@ -31,6 +31,7 @@ pub fn build(b: *std.Build) void {
             .blank => .blank,
         };
         addConfigHeaderWithSnippets(
+            upstream,
             include,
             header.sub_path,
             style,
@@ -44,6 +45,7 @@ pub fn build(b: *std.Build) void {
 }
 
 fn addConfigHeaderWithSnippets(
+    dependency: *std.Build.Dependency,
     write_file: *std.Build.Step.WriteFile,
     sub_path: []const u8,
     style: std.Build.Step.ConfigHeader.Style,
@@ -69,26 +71,25 @@ fn addConfigHeaderWithSnippets(
             }
         }
 
-        const upstream = b.dependency("upstream", .{});
         const max_count_snippets = @typeInfo(SnippetTag).@"enum".fields.len;
         var snippets: [max_count_snippets]InsertHeaderSnippets.Snippet = undefined;
 
         for (snippet_tags, snippets[0..snippet_tags.len]) |tag, *snippet| {
             snippet.* = switch (tag) {
                 ._GL_FUNCDECL_RPL => .{
-                    .file = upstream.path("lib/c++defs.h"),
+                    .file = dependency.path("lib/c++defs.h"),
                     .line_pattern = "definitions of _GL_FUNCDECL_RPL",
                 },
                 ._Noreturn => .{
-                    .file = upstream.path("lib/_Noreturn.h"),
+                    .file = dependency.path("lib/_Noreturn.h"),
                     .line_pattern = "definition of _Noreturn",
                 },
                 ._GL_ARG_NONNULL => .{
-                    .file = upstream.path("lib/arg-nonnull.h"),
+                    .file = dependency.path("lib/arg-nonnull.h"),
                     .line_pattern = "definition of _GL_ARG_NONNULL",
                 },
                 ._GL_WARN_ON_USE => .{
-                    .file = upstream.path("lib/warn-on-use.h"),
+                    .file = dependency.path("lib/warn-on-use.h"),
                     .line_pattern = "definition of _GL_WARN_ON_USE",
                 },
             };
