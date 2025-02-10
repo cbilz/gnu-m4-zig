@@ -4,26 +4,30 @@ Work in progress.
 
 ## Goal
 
-Provide GNU M4 as a Zig package that works on Linux, macOS and Windows without
-requiring system dependencies.
+This project aims to provide a Zig package for GNU M4 that runs on Linux, macOS
+and Windows without system dependencies. The longer-term goal is to extract a
+reusable Zig library for compiling projects that rely on Autotools and Gnulib.
 
-## Current status
+## Status
 
-All non-test headers are configured with values chosen for a particular Linux system.
+Compiles and appears to run correctly on my Linux system when built in
+`ReleaseFast` or `ReleaseSmall` mode. However, with safety checks enabled, the
+executable hits an illegal instruction immediately on startup, presumably due to
+undefined behavior.
 
 ## Next steps
 
-1. Compile the `m4` executable.
-2. Port the test suite and expose it as a build step.
-3. Implement checks for those configuration values that do not depend on
-   preprocessing, compiling or running checking code. Exclude unused or
-   redundant checks.
-4. Implement a `LazyValue` system to allow configuration values to be passed to
-   `ConfigHeader` by other build steps.
-5. Implement checks for the remaining configuration values, excluding unused or
-   redundant ones.
-6. Extract a reusable configuration library for other projects based on
-   Autotools or Gnulib.
+1. Fix the illegal instruction issue.
+2. Port the test suite and integrate it as a build step.
+3. Implement those configuration checks that do not depend on preprocessing,
+   compilation or execution of probing code. Exclude any unused or redundant
+   checks.
+4. Implement a `LazyValue` system to allow other build steps to pass
+   configuration values to `ConfigHeader`.
+5. Implement remaining configuration checks, again excluding unused or redundant
+   ones.
+6. Extract a reusable configuration library for projects using Autotools or
+   Gnulib.
 
 ## Requirements
 
