@@ -45,7 +45,7 @@ let
       '';
     };
 in
-pkgs.mkShell {
+pkgs.mkShellNoCC {
   packages = [
     zig
     zls
