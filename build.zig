@@ -18,13 +18,18 @@ const version = zon.version;
 pub fn build(b: *std.Build) void {
     const check = b.step("check", "Check if GNU M4 compiles");
 
-    const include = b.addWriteFiles();
-    check.dependOn(&include.step);
-    b.installDirectory(.{
-        .source_dir = include.getDirectory(),
+    const configured_headers = b.addWriteFiles();
+    check.dependOn(&configured_headers.step);
+
+    const install_headers_step = b.step(
+        "install-conf-h",
+        "Install the configured headers used in the build.",
+    );
+    install_headers_step.dependOn(&b.addInstallDirectory(.{
+        .source_dir = configured_headers.getDirectory(),
         .install_dir = .header,
         .install_subdir = "",
-    });
+    }).step);
 
     const upstream = b.dependency("upstream", .{});
 
@@ -36,7 +41,7 @@ pub fn build(b: *std.Build) void {
         };
         configureHeader(
             upstream,
-            include,
+            configured_headers,
             config_header.sub_path,
             style,
             config_header.values,
@@ -56,7 +61,7 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(exe);
 
     exe.linkLibC();
-    exe.addIncludePath(include.getDirectory());
+    exe.addIncludePath(configured_headers.getDirectory());
     exe.addIncludePath(upstream.path("lib"));
 
     exe.addCSourceFiles(.{
