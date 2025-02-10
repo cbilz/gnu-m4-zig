@@ -43,6 +43,40 @@ pub fn build(b: *std.Build) void {
             config_header.snippets,
         );
     }
+
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const exe = b.addExecutable(.{
+        .name = "m4",
+        .target = target,
+        .optimize = optimize,
+    });
+    check.dependOn(&exe.step);
+    b.installArtifact(exe);
+
+    exe.linkLibC();
+    exe.addIncludePath(include.getDirectory());
+    exe.addIncludePath(upstream.path("lib"));
+
+    exe.addCSourceFiles(.{
+        .root = upstream.path("lib"),
+        .files = gnulib_sources,
+        .flags = &.{},
+    });
+
+    exe.addCSourceFiles(.{
+        .root = upstream.path("src"),
+        .files = m4_sources,
+        .flags = &.{},
+    });
+
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| run_cmd.addArgs(args);
+
+    const run_step = b.step("run", "Run m4");
+    run_step.dependOn(&run_cmd.step);
 }
 
 fn configureHeader(
@@ -3524,4 +3558,152 @@ const wctype_h_values = &[_]GnulibValueTag{
     .REPLACE_ISWDIGIT,
     .REPLACE_ISWXDIGIT,
     .REPLACE_TOWLOWER,
+};
+
+const gnulib_sources = &[_][]const u8{
+    "asnprintf.c",
+    "asprintf.c",
+    "asyncsafe-spin.c",
+    "basename-lgpl.c",
+    "basename.c",
+    "binary-io.c",
+    "bitrotate.c",
+    "c-ctype.c",
+    "c-stack.c",
+    "c-strcasecmp.c",
+    "c-strncasecmp.c",
+    "canonicalize.c",
+    "chdir-long.c",
+    "clean-temp-simple.c",
+    "clean-temp.c",
+    "cloexec.c",
+    "close-stream.c",
+    "closein.c",
+    "closeout.c",
+    "concat-filename.c",
+    "dirname-lgpl.c",
+    "dirname.c",
+    "dup-safer-flag.c",
+    "dup-safer.c",
+    "execute.c",
+    "exitfail.c",
+    "fatal-signal.c",
+    "fclose.c",
+    "fcntl.c",
+    "fd-hook.c",
+    "fd-safer-flag.c",
+    "fd-safer.c",
+    "fflush.c",
+    "file-set.c",
+    "filenamecat-lgpl.c",
+    "filenamecat.c",
+    "findprog-in.c",
+    "fopen-safer.c",
+    "fpurge.c",
+    "freadahead.c",
+    "freading.c",
+    "fseek.c",
+    "fseeko.c",
+    "getcwd-lgpl.c",
+    "getcwd.c",
+    "getprogname.c",
+    "gl_avltree_oset.c",
+    "gl_linked_list.c",
+    "gl_linkedhash_list.c",
+    "gl_list.c",
+    "gl_oset.c",
+    "gl_xlist.c",
+    "gl_xoset.c",
+    "glthread/lock.c",
+    "glthread/threadlib.c",
+    "glthread/tls.c",
+    "hard-locale.c",
+    "hash-pjw.c",
+    "hash-triple-simple.c",
+    "hash.c",
+    "localcharset.c",
+    "localename-table.c",
+    "localename.c",
+    "malloc/dynarray_at_failure.c",
+    "malloc/dynarray_emplace_enlarge.c",
+    "malloc/dynarray_finalize.c",
+    "malloc/dynarray_resize.c",
+    "malloc/dynarray_resize_clear.c",
+    "malloc/scratch_buffer_dupfree.c",
+    "malloc/scratch_buffer_grow.c",
+    "malloc/scratch_buffer_grow_preserve.c",
+    "malloc/scratch_buffer_set_array_size.c",
+    "malloca.c",
+    "math.c",
+    "mbchar.c",
+    "mbiter.c",
+    "mbrtowc.c",
+    "mbslen.c",
+    "mbsstr.c",
+    "mbuiter.c",
+    "memchr2.c",
+    "mkstemp-safer.c",
+    "obstack.c",
+    "openat-die.c",
+    "openat-proc.c",
+    "pipe-safer.c",
+    "pipe2-safer.c",
+    "pipe2.c",
+    "printf-args.c",
+    "printf-frexp.c",
+    "printf-frexpl.c",
+    "printf-parse.c",
+    "progname.c",
+    "propername.c",
+    "quotearg.c",
+    "regex.c",
+    "save-cwd.c",
+    "setlocale_null.c",
+    "sig-handler.c",
+    "sigsegv.c",
+    "spawn-pipe.c",
+    "spawn_faction_addchdir.c",
+    "stackvma.c",
+    "stat-time.c",
+    "striconv.c",
+    "stripslash.c",
+    "strnlen1.c",
+    "tempname.c",
+    "tmpdir.c",
+    "trim.c",
+    "unistd.c",
+    "unistr/u8-mbtoucr.c",
+    "unistr/u8-uctomb-aux.c",
+    "unistr/u8-uctomb.c",
+    "uniwidth/width.c",
+    "vasnprintf.c",
+    "vasprintf.c",
+    "verror.c",
+    "version-etc-fsf.c",
+    "version-etc.c",
+    "wait-process.c",
+    "wctype-h.c",
+    "xalloc-die.c",
+    "xasprintf.c",
+    "xmalloc.c",
+    "xmalloca.c",
+    "xprintf.c",
+    "xsize.c",
+    "xstriconv.c",
+    "xstrndup.c",
+    "xvasprintf.c",
+};
+
+const m4_sources = &[_][]const u8{
+    "builtin.c",
+    "debug.c",
+    "eval.c",
+    "format.c",
+    "freeze.c",
+    "input.c",
+    "m4.c",
+    "macro.c",
+    "output.c",
+    "path.c",
+    "symtab.c",
 };
