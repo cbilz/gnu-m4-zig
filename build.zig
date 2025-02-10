@@ -16,17 +16,20 @@ const zon: Schema = @import("build.zig.zon");
 const version = zon.version;
 
 pub fn build(b: *std.Build) void {
-    const upstream = b.dependency("upstream", .{});
+    const check = b.step("check", "Check if GNU M4 compiles");
 
     const include = b.addWriteFiles();
+    check.dependOn(&include.step);
     b.installDirectory(.{
         .source_dir = include.getDirectory(),
         .install_dir = .header,
         .install_subdir = "",
     });
 
-    inline for (headers) |header| {
-        const style: ConfigHeaderCustom.Style = switch (header.style) {
+    const upstream = b.dependency("upstream", .{});
+
+    for (config_headers) |config_header| {
+        const style: ConfigHeaderCustom.Style = switch (config_header.style) {
             .autoconf_undef => |p| .{ .autoconf_undef = upstream.path(p) },
             .autoconf_at => |p| .{ .autoconf_at = upstream.path(p) },
             .blank => .blank,
@@ -34,15 +37,12 @@ pub fn build(b: *std.Build) void {
         configureHeader(
             upstream,
             include,
-            header.sub_path,
+            config_header.sub_path,
             style,
-            header.values,
-            header.snippets,
+            config_header.values,
+            config_header.snippets,
         );
     }
-
-    const check = b.step("check", "Check if GNU M4 compiles");
-    check.dependOn(&include.step);
 }
 
 fn configureHeader(
@@ -178,7 +178,7 @@ const Header = struct {
     };
 };
 
-const headers = [_]Header{
+const config_headers = [_]Header{
     .{
         .sub_path = "config.h",
         .style = .{ .autoconf_undef = "lib/config.hin" },
@@ -1094,9 +1094,9 @@ const config_h_values = .{
 
 // This checks that all values in gnulib_values are in use.
 comptime {
-    @setEvalBranchQuota((headers.len + 1) * gnulib_values_fields.len);
+    @setEvalBranchQuota((config_headers.len + 1) * gnulib_values_fields.len);
     var value_used = [_]bool{false} ** gnulib_values_fields.len;
-    for (headers) |header| {
+    for (config_headers) |header| {
         switch (header.values) {
             .config => {},
             .gnulib => |tags| {
