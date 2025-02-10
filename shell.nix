@@ -49,5 +49,6 @@ pkgs.mkShellNoCC {
   packages = [
     zig
     zls
+    pkgs.lldb
   ];
 }
