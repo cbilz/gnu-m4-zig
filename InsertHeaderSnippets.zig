@@ -95,23 +95,34 @@ fn make(step: *Step, options: Step.MakeOptions) !void {
         \\
     );
 
-    const source_path = ihs.source_file.getPath2(b, step);
-    const source_text = std.fs.cwd().readFileAlloc(arena, source_path, ihs.max_bytes) catch |err| {
-        return step.fail("unable to read header file '{s}': {s}", .{
-            source_path, @errorName(err),
+    const source_path = ihs.source_file.getPath3(b, step);
+    const source_text = source_path.root_dir.handle.readFileAlloc(
+        arena,
+        source_path.sub_path,
+        ihs.max_bytes,
+    ) catch |err| {
+        return step.fail("unable to read header file '{}{s}': {s}", .{
+            source_path.root_dir, source_path.sub_path, @errorName(err),
         });
     };
 
     const snippet_texts = arena.alloc([]const u8, ihs.snippets.len) catch @panic("OOM");
     for (ihs.snippets, snippet_texts) |snippet, *text| {
-        const snippet_path = snippet.file.getPath2(b, step);
-        text.* = std.fs.cwd().readFileAlloc(arena, snippet_path, ihs.max_bytes) catch |err| {
-            return step.fail("unable to read snippet file '{s}': {s}", .{
-                snippet_path, @errorName(err),
+        const snippet_path = snippet.file.getPath3(b, step);
+        text.* = snippet_path.root_dir.handle.readFileAlloc(
+            arena,
+            snippet_path.sub_path,
+            ihs.max_bytes,
+        ) catch |err| {
+            return step.fail("unable to read snippet file '{}{s}': {s}", .{
+                snippet_path.root_dir, snippet_path.sub_path, @errorName(err),
             });
         };
         if (text.*[text.len - 1] != '\n') {
-            return step.fail("snippet file '{s}' does not end with a newline", .{snippet_path});
+            return step.fail(
+                "snippet file '{}{s}' does not end with a newline",
+                .{ snippet_path.root_dir, snippet_path.sub_path },
+            );
         }
     }
 
@@ -126,15 +137,15 @@ fn make(step: *Step, options: Step.MakeOptions) !void {
             if (mem.indexOfPos(u8, source_text[0..pos_newline], pos, snippet.line_pattern)) |_| {
                 if (matched.*) {
                     return step.fail(
-                        "header '{s}' contains multiple matches of the pattern '{s}'",
-                        .{ source_path, snippet.line_pattern },
+                        "header '{}{s}' contains multiple matches of the pattern '{s}'",
+                        .{ source_path.root_dir, source_path.sub_path, snippet.line_pattern },
                     );
                 }
                 matched.* = true;
                 if (pos_newline == source_text.len) {
                     return step.fail(
-                        "header '{s}' does not contain a newline after matched pattern '{s}'",
-                        .{ source_path, snippet.line_pattern },
+                        "header '{}{s}' does not contain a newline after matched pattern '{s}'",
+                        .{ source_path.root_dir, source_path.sub_path, snippet.line_pattern },
                     );
                 }
                 try output.appendSlice(text);
@@ -145,8 +156,8 @@ fn make(step: *Step, options: Step.MakeOptions) !void {
 
     if (mem.indexOfScalar(bool, matches, false)) |i| {
         return step.fail(
-            "header '{s}' does not contain pattern '{s}'",
-            .{ source_path, ihs.snippets[i].line_pattern },
+            "header '{}{s}' does not contain pattern '{s}'",
+            .{ source_path.root_dir, source_path.sub_path, ihs.snippets[i].line_pattern },
         );
     }
 
