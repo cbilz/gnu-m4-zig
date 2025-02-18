@@ -19,9 +19,9 @@ let
     let
       # Please find a matching ZLS version on https://zigtools.org/zls/install/
       # whenever the above Zig version is changed.
-      version = "0.14.0-dev.366+d3d11a0";
+      version = "0.14.0-dev.390+188a4c0";
       systems = {
-        x86_64-linux = "sha256-yv0mi8XMdVQTcxE96Z/bpsaXW76G8A8Rrd8GKLw1P64=";
+        x86_64-linux = "sha256-1q4WEfSHaIp9q6xtq+jNO0QHN22vE1e1bbH4OYzQlvI=";
       };
       sha256 = systems.${system};
       splits = pkgs.lib.strings.splitString "-" system;
