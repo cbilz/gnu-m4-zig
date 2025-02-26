@@ -6,22 +6,22 @@
 let
   zig =
     let
-      version = "master-2025-02-05";
+      version = "master-2025-02-25";
     in
     (import (pkgs.fetchFromGitHub {
       owner = "mitchellh";
       repo = "zig-overlay";
-      rev = "4dfa3d690edb7ae4cb332229b68dcf1ef30a1a03";
-      sha256 = "sha256-pIWjN75ZMDQmj77GiT8yV3U3pFpQsv9An+xnK+UxhMI=";
+      rev = "289cc07b8e416d16a6f8117a6ede45e001b35b1d";
+      sha256 = "sha256-mztnIaWt7EPsklSQz3A3wlWUIHbhH6qnGzyrGUTrB8Y=";
     }) { inherit pkgs system; })."${version}";
 
   zls =
     let
       # Please find a matching ZLS version on https://zigtools.org/zls/install/
       # whenever the above Zig version is changed.
-      version = "0.14.0-dev.390+188a4c0";
+      version = "0.14.0-dev.397+30b0da0";
       systems = {
-        x86_64-linux = "sha256-1q4WEfSHaIp9q6xtq+jNO0QHN22vE1e1bbH4OYzQlvI=";
+        x86_64-linux = "sha256-l2Cz6ttxmnCF9OUZsF5Jg5uvcVd9q9/xY2OEJh/RSZQ=";
       };
       sha256 = systems.${system};
       splits = pkgs.lib.strings.splitString "-" system;

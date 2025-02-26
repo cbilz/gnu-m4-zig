@@ -1,5 +1,4 @@
 const std = @import("std");
-const ConfigHeaderCustom = @import("ConfigHeaderCustom.zig");
 const InsertHeaderSnippets = @import("InsertHeaderSnippets.zig");
 
 // Importing ZON without specifying a result type might be supported in the future, see
@@ -34,7 +33,7 @@ pub fn build(b: *std.Build) void {
     const upstream = b.dependency("upstream", .{});
 
     for (config_headers) |config_header| {
-        const style: ConfigHeaderCustom.Style = switch (config_header.style) {
+        const style: std.Build.Step.ConfigHeader.Style = switch (config_header.style) {
             .autoconf_undef => |p| .{ .autoconf_undef = upstream.path(p) },
             .autoconf_at => |p| .{ .autoconf_at = upstream.path(p) },
             .blank => .blank,
@@ -88,17 +87,29 @@ fn configureHeader(
     dependency: *std.Build.Dependency,
     write_file: *std.Build.Step.WriteFile,
     sub_path: []const u8,
-    style: ConfigHeaderCustom.Style,
+    style: std.Build.Step.ConfigHeader.Style,
     values: Values,
     snippet_tags: []const SnippetTag,
 ) void {
     const b = write_file.step.owner;
 
-    const config_header = addConfigHeaderCustom(
-        b,
-        .{ .style = style, .include_path = sub_path },
-        values,
-    );
+    const config_header = b.addConfigHeader(.{ .style = style, .include_path = sub_path }, .{});
+    switch (values) {
+        .config => config_header.addValues(config_h_values),
+        .gnulib => |tags| {
+            var used = [_]bool{false} ** gnulib_values_fields.len;
+            for (tags) |tag| used[@intFromEnum(tag)] = true;
+            @setEvalBranchQuota(gnulib_values_fields.len);
+            inline for (gnulib_values_fields, used) |field, u| {
+                if (u) config_header.addValue(
+                    field.name,
+                    field.type,
+                    @field(gnulib_values, field.name),
+                );
+            }
+        },
+    }
+
     // This should be fixed in ConfigHeader, see:
     // https://github.com/ziglang/zig/issues/16208
     // https://github.com/ziglang/zig/pull/19704
@@ -153,36 +164,6 @@ const SnippetTag = enum {
     _GL_ARG_NONNULL,
     _GL_WARN_ON_USE,
 };
-
-fn addConfigHeaderCustom(
-    b: *std.Build,
-    options: ConfigHeaderCustom.Options,
-    values: Values,
-) *ConfigHeaderCustom {
-    var options_copy = options;
-    if (options_copy.first_ret_addr == null)
-        options_copy.first_ret_addr = @returnAddress();
-
-    const config_header = ConfigHeaderCustom.create(b, options_copy);
-    switch (values) {
-        .config => config_header.addValues(config_h_values),
-        .gnulib => |tags| {
-            var used = [_]bool{false} ** gnulib_values_fields.len;
-            for (tags) |tag| {
-                used[@intFromEnum(tag)] = true;
-            }
-            @setEvalBranchQuota(gnulib_values_fields.len);
-            inline for (gnulib_values_fields, used) |field, u| {
-                if (u) config_header.addValue(
-                    field.name,
-                    field.type,
-                    @field(gnulib_values, field.name),
-                );
-            }
-        },
-    }
-    return config_header;
-}
 
 const Values = union(enum) {
     config,

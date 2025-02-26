@@ -31,7 +31,7 @@ undefined behavior.
 
 ## Requirements
 
-- Uses Zig 0.14.0-dev.3046+08d661fcf.
+- Uses Zig 0.14.0-dev.3367+1cc388d52.
 
 ## Limitations
 
