@@ -2,8 +2,8 @@ const std = @import("std");
 const ConfigHeaderCustom = @import("ConfigHeaderCustom.zig");
 const InsertHeaderSnippets = @import("InsertHeaderSnippets.zig");
 
-// Importing ZON without specifying a result type might be supported in the future. Then we could
-// make the following code less verbose more robust.
+// Importing ZON without specifying a result type might be supported in the future, see
+// https://github.com/ziglang/zig/pull/22907
 const Schema = struct {
     name: []const u8,
     version: []const u8,
@@ -101,6 +101,7 @@ fn configureHeader(
     );
     // This should be fixed in ConfigHeader, see:
     // https://github.com/ziglang/zig/issues/16208
+    // https://github.com/ziglang/zig/pull/19704
     if (style.getPath()) |lp| lp.addStepDependencies(&config_header.step);
 
     const source = if (snippet_tags.len == 0)
